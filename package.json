@@ -12,15 +12,16 @@
     "grunt-webdriver": "^1.0.0",
     "mocha": "^2.3.4",
     "progress": "^1.1.8",
-    "request": "^2.67.0",
     "selenium-standalone": "^4.8.0",
-    "underscore": "^1.8.3",
     "webdriverio": "^3.3.0"
   },
   "dependencies": {
     "async": "^1.5.0",
     "jsdom": "^7.2.1",
     "pg": "^4.4.3",
-    "q": "^1.4.1"
+    "q": "^1.4.1",
+    "redis": "^2.4.2",
+    "request": "^2.67.0",
+    "underscore": "^1.8.3"
   }
 }

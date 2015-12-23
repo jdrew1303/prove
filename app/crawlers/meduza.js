@@ -4,9 +4,11 @@ var _ = require('underscore'),
   request = require('request'),
   zlib = require('zlib'),
   async = require('async'),
+  qs = require('querystring'),
   Q = require('q'),
   jsdom = require('jsdom'),
-  db = require('../datasources/postgres')(),
+  db = require('../datasources/postgres'),
+  queue = require('../modules/queue'),
   checkExisting = require('../modules/check-existing'),
   baseUrl = 'https://meduza.io/api/v3',
   pagesLimit = 100,
@@ -19,7 +21,6 @@ var _ = require('underscore'),
     'polygon',
     'shapito'
   ],
-  articles = [],
   spentTime = new Date(),
   EventEmitter = require('events').EventEmitter;
 
@@ -30,8 +31,14 @@ async.each(types, function(type, internalCallback) {
     workflow = new EventEmitter();
 
   workflow.on('getArticlesList', function() {
+    var queryOptions = {
+      chrono: type,
+      page: curPage,
+      per_page: perPage,
+      locale: 'ru'
+    };
     request.get({
-      url: `${baseUrl}/search?chrono=${type}&page=${curPage}&per_page=${perPage}&locale=ru`,
+      url: `${baseUrl}/search?${qs.stringify(queryOptions)}`,
       encoding: null // to get response as Buffer, needed for gunzip
     }, Q.async(function*(err, response, body) {
       if (err) {
@@ -60,12 +67,14 @@ async.each(types, function(type, internalCallback) {
       });
 
       if (!onlyNotExistingArticles.length) {
+        // need to leave only internalCallback(); when script will be run by cron
         if (curPage < pagesLimit) {
           curPage += 1;
           workflow.emit('getArticlesList');
         } else {
           internalCallback();
         }
+        //
       } else {
         workflow.emit('getArticlesText', onlyNotExistingArticles);
       }
@@ -121,12 +130,16 @@ async.each(types, function(type, internalCallback) {
             'published'
           ];
 
-          db.query(`INSERT INTO articles (${fields.join(',')}) VALUES (1, $1::text, $2::text, $3::text, $4)`, [article_url, text, title, published_at], function(err) {
+          db.query(`INSERT INTO articles (${fields.join(',')}) VALUES (1, $1::text, $2::text, $3::text, $4) RETURNING id`, [article_url, text, title, published_at], function(err, response) {
             if (err) {
               internalCallback2(err);
             } else {
               savedArticles += 1;
-              internalCallback2();
+              queue.add([{
+                entity: 'articles',
+                action: 'add',
+                id: response.rows[0].id // id of inserted article
+              }], internalCallback2);
             }
           });
         });

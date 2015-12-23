@@ -1,7 +1,6 @@
 'use strict';
 
-var db = require('../datasources/postgres')(),
-  constants = require('../constants')(),
+var db = require('../datasources/postgres'),
   validator = require('../modules/validator'),
   EventEmitter = require('events').EventEmitter;
 

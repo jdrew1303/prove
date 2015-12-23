@@ -13,30 +13,38 @@ function getClient(callback) {
   pg.connect(`postgres://${db_username}:${db_password}@localhost/${db_database}`, cb);
 }
 
-exports = module.exports = function() {
-  return {
-    query: function(query_string, fields, callback) {
-      var cb = (_.isFunction(fields) ? fields : callback) || _.noop;
-      fields = !_.isFunction(fields) ? fields : [];
-      query_string = (query_string || '').trim();
-      if (!_.isString(query_string) || !query_string.length) {
-        cb(constants.REQUIRED('query_string'));
-      } else {
-        getClient(function(err, client, done) {
-          if (err) {
-            return cb(err);
-          }
+// ----------------
+// public functions
+// ----------------
 
-          client.query(query_string, fields, function(err, response) {
-            done();
-            if (err) {
-              cb(err);
-            } else {
-              cb(null, response);
-            }
-          });
-        });
+function query(query_string, fields, callback) {
+  var cb = (_.isFunction(fields) ? fields : callback) || _.noop;
+  fields = !_.isFunction(fields) ? fields : [];
+  query_string = (query_string || '').trim();
+  if (!_.isString(query_string) || !query_string.length) {
+    cb(constants.REQUIRED('query_string'));
+  } else {
+    getClient(function(err, client, done) {
+      if (err) {
+        return cb(err);
       }
-    }
-  };
+
+      client.query(query_string, fields, function(err, response) {
+        done();
+        if (err) {
+          cb(err);
+        } else {
+          cb(null, response);
+        }
+      });
+    });
+  }
+}
+
+// ---------
+// interface
+// ---------
+
+exports = module.exports = {
+  query
 };
