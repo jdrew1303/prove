@@ -1,0 +1,12 @@
+{
+  "disallowMultipleLineBreaks": null,
+  "requireCamelCaseOrUpperCaseIdentifiers": null,
+  "requireMultipleVarDecl": null,
+  "validateLineBreaks": null,
+  "requireTrailingComma": null,
+  "disallowPaddingNewLinesBeforeLineComments": null,
+  "requirePaddingNewLinesBeforeLineComments": null,
+  "disallowMultipleVarDecl": null,
+  "requireBlocksOnNewline": null,
+  "requirePaddingNewLinesAfterBlocks": null
+}

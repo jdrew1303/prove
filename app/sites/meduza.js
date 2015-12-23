@@ -1,0 +1,159 @@
+'use strict';
+
+var _ = require('underscore'),
+  request = require('request'),
+  zlib = require('zlib'),
+  async = require('async'),
+  Q = require('q'),
+  jsdom = require('jsdom'),
+  db = require('../datasources/postgres')(),
+  checkExisting = require('../modules/check-existing'),
+  baseUrl = 'https://meduza.io/api/v3',
+  pagesLimit = 100,
+  savedArticles = 0,
+  perPage = 100,
+  types = [
+    'news',
+    'articles',
+    'cards',
+    'polygon',
+    'shapito'
+  ],
+  articles = [],
+  spentTime = new Date(),
+  EventEmitter = require('events').EventEmitter;
+
+console.log('Crawler for `Meduza` is started');
+
+async.each(types, function(type, internalCallback) {
+  var curPage = 1,
+    workflow = new EventEmitter();
+
+  workflow.on('getArticlesList', function() {
+    request.get({
+      url: `${baseUrl}/search?chrono=${type}&page=${curPage}&per_page=${perPage}&locale=ru`,
+      encoding: null // to get response as Buffer, needed for gunzip
+    }, Q.async(function*(err, response, body) {
+      if (err) {
+        return internalCallback(err);
+      }
+
+      var encoding = response.headers['content-encoding'];
+      if (encoding === 'gzip') {
+        body = zlib.gunzipSync(body);
+      }
+      body = JSON.parse(body);
+
+      var collections = body.collection;
+      if (!collections || !collections.length) {
+        return internalCallback();
+      }
+
+      var alreadyExistingArticles = yield checkExisting(collections, 'meduza');
+      if (alreadyExistingArticles.length) {
+        alreadyExistingArticles = _.pluck(alreadyExistingArticles, 'url');
+      }
+
+      var onlyNotExistingArticles = _.difference(collections, alreadyExistingArticles);
+      onlyNotExistingArticles = _.filter(onlyNotExistingArticles, function(item) {
+        return !/^quiz/.test(item);
+      });
+
+      if (!onlyNotExistingArticles.length) {
+        if (curPage < pagesLimit) {
+          curPage += 1;
+          workflow.emit('getArticlesList');
+        } else {
+          internalCallback();
+        }
+      } else {
+        workflow.emit('getArticlesText', onlyNotExistingArticles);
+      }
+    }));
+  });
+
+  workflow.on('getArticlesText', function(urls) {
+    async.each(urls, function(article_url, internalCallback2) {
+      console.log(`${baseUrl}/${article_url}`);
+      request.get({
+        url: `${baseUrl}/${article_url}`,
+        encoding: null // to get response as Buffer, needed for gunzip
+      }, function(err, response, body) {
+        if (err) {
+          return internalCallback2(err);
+        }
+
+        var encoding = response.headers['content-encoding'];
+        if (encoding === 'gzip') {
+          body = zlib.gunzipSync(body);
+        }
+        body = JSON.parse(body).root;
+
+        var text = body.content.body,
+          title = body.title,
+          published_at = new Date(body.published_at);
+
+        jsdom.env(text, function(err, window) {
+          if (err) {
+            return internalCallback2(err);
+          }
+
+          var doc = window.document,
+            bodyNodeNews = doc.querySelector('.Body'),
+            bodyNodeCards = doc.querySelector('.Card');
+
+          if (bodyNodeNews) {
+            text = bodyNodeNews.textContent;
+          }
+          if (bodyNodeCards) {
+            text = '';
+            let cards = bodyNodeCards.querySelectorAll('.CardChapter-body');
+            _.each(cards, function(card) {
+              text += card.textContent;
+            });
+          }
+
+          var fields = [
+            'source_id',
+            'url',
+            'text',
+            'title',
+            'published'
+          ];
+
+          db.query(`INSERT INTO articles (${fields.join(',')}) VALUES (1, $1::text, $2::text, $3::text, $4)`, [article_url, text, title, published_at], function(err) {
+            if (err) {
+              internalCallback2(err);
+            } else {
+              savedArticles += 1;
+              internalCallback2();
+            }
+          });
+        });
+      });
+    }, function(err) {
+      if (err) {
+        internalCallback(err);
+      } else {
+        if (curPage < pagesLimit) {
+          curPage += 1;
+          workflow.emit('getArticlesList');
+        } else {
+          internalCallback();
+        }
+      }
+    });
+  });
+
+  workflow.emit('getArticlesList');
+}, function(err) {
+  if (err) {
+    console.log(err);
+  } else {
+    console.log('Crawler for `Meduza` is stopped');
+    console.log('Saved articles: %d', savedArticles);
+    spentTime = ((new Date().getTime() - spentTime.getTime()) / 1000 / 60).toFixed(2);
+    console.log('Spent time: %d minute', spentTime);
+  }
+  process.exit(1);
+});
