@@ -1,2 +1,5 @@
 /node_modules
 phantomjsdriver.log
+/tomita/tomita-mac
+/tomita/*.bin
+.DS_Store

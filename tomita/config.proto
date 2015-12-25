@@ -1,0 +1,13 @@
+encoding "utf-8";
+
+TTextMinerConfig {
+  Dictionary = "dic.gzt";
+
+  Articles = [
+    { Name = "действия" }
+  ]
+
+  Facts = [
+    { Name = "Fact" }
+  ]
+}

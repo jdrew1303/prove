@@ -9,7 +9,5 @@ exports = module.exports = {
 
   REDIS_PREFIX: 'prove:',
 
-  SENTRY_URL: '',
-
-  WATSON_URL: 'http://gateway-a.watsonplatform.net'
+  SENTRY_URL: ''
 };
