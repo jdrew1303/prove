@@ -208,7 +208,7 @@ function pMove(options, callback) {
                   topic: `queue:logs:${entity}:${job}:${to}:${gran}`,
                   id: item.id,
                   score: item.score
-                })
+                });
               }
             });
           });

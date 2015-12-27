@@ -74,7 +74,7 @@ exports = module.exports = function(options, callback, logger) {
         _.each(response.Fact, function(fact) {
           var factField = fact.Field1;
           if (factField) {
-            fact = factField['$'].val;
+            fact = factField.$.val;
             gotFacts.push(fact.toLowerCase());
           }
         });

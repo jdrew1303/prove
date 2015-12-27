@@ -165,7 +165,7 @@ function hgetall(topic, callback) {
 }
 
 function hpage(listtopic, datatopic, options, callback) {
-  var cb = callback || noop,
+  var cb = callback || _.noop,
     opts = options || {},
     showAll = opts.per_page === 0,
     start = showAll ? 0 : (opts.start || 0),
@@ -288,7 +288,7 @@ function subscribe(channelName) {
 }
 
 function on(event, callback) {
-  var cb = callback || noop;
+  var cb = callback || _.noop;
   if (event) {
     subscribeClient.on(event, cb);
   } else {
@@ -297,7 +297,7 @@ function on(event, callback) {
 }
 
 function publish(event, message, callback) {
-  var cb = callback || noop;
+  var cb = callback || _.noop;
   if (event && message) {
     client.publish(event, message, cb);
   } else {

@@ -58,8 +58,8 @@ function timeJobsChecker() {
     timeCell = scheduledJobs[curTimestamp] || [];
 
   _.each(timeCell, function(jobItem) {
-    new Runner(config[jobItem]);
     updateJobScheduleTime(jobItem, curTimestamp);
+    return new Runner(config[jobItem]);
   });
   setTimeout(timeJobsChecker, schedulerStep);
 }

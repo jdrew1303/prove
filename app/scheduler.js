@@ -207,7 +207,7 @@ const Runner = class {
           }, () => {
             var delay = jobConfig.delay || 0;
             setTimeout(() => {
-              new Runner(jobConfig);
+              return new Runner(jobConfig);
             }, delay);
           });
         });
@@ -237,7 +237,7 @@ if (!isStarted) {
   redis.on('message', function(channel) {
     _.each(config, function(item) {
       if (item.queue === channel) {
-        new Runner(item);
+        return new Runner(item);
       }
     });
   });
