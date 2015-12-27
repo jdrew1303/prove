@@ -13,7 +13,7 @@ exports = module.exports = {
     name: 'Articles parse',
     entity: 'articles',
     job: 'parse',
-    module: require('./jobs/articlesParse'),
+    module: require('./articlesParse'),
     queue: 'queue:articles:add',
     hits: 'queue:hits:articles:add',
     delay: 33, // loop delay in milliseconds

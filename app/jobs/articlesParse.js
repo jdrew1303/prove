@@ -2,12 +2,12 @@
 
 var _ = require('underscore'),
   async = require('async'),
-  constants = require('../../app/constants')(),
-  redis = require('../../app/datasources/redis'),
-  psql = require('../../app/datasources/postgres'),
-  tomita = require('../../app/modules/tomita'),
+  constants = require('../constants')(),
+  redis = require('../datasources/redis'),
+  psql = require('../datasources/postgres'),
+  tomita = require('../modules/tomita'),
   EventEmitter = require('events').EventEmitter,
-  myEventEmitter = require('../../utils/event-emitter');
+  myEventEmitter = require('../utils/event-emitter');
 
 exports = module.exports = function(options, callback, logger) {
   var opts = options || {},

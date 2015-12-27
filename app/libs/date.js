@@ -1,7 +1,7 @@
 'use strict';
 
 var moment = require('moment-timezone'),
-  settings = require('../settings') || {},
+  settings = require('../../settings') || {},
   timezone = process.env.TIMEZONE || settings.TIMEZONE;
 
 var getYYYY = function(date, suffix) {
