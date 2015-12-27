@@ -68,7 +68,7 @@ exports = module.exports = function(options, callback, logger) {
     tomita.getFacts(articleInfo.text, function(err, response) {
       if (err) {
         cb(err);
-      } else if (!response) {
+      } else if (!response || !response.Fact || !response.Fact.length) {
         cb('No facts');
       } else {
         _.each(response.Fact, function(fact) {

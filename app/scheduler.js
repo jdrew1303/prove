@@ -152,6 +152,8 @@ const Runner = class {
                     action: jobConfig.job,
                     id: entityId
                   }]);
+                } else {
+                  workflow.emit('finish');
                 }
               });
             } else {

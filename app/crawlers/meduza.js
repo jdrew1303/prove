@@ -110,16 +110,20 @@ exports = module.exports = function(options) {
             if (err) {
               return internalCallback2(err);
             }
+            text = '';
 
             var doc = window.document,
+              bodyNodeLead = doc.querySelector('.Lead'),
               bodyNodeNews = doc.querySelector('.Body'),
               bodyNodeCards = doc.querySelector('.Card');
 
+            if (bodyNodeLead) {
+              text += bodyNodeNews.textContent;
+            }
             if (bodyNodeNews) {
-              text = bodyNodeNews.textContent;
+              text += bodyNodeNews.textContent;
             }
             if (bodyNodeCards) {
-              text = '';
               let cards = bodyNodeCards.querySelectorAll('.CardChapter-body');
               _.each(cards, function(card) {
                 text += card.textContent;

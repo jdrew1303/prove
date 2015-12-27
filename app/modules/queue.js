@@ -2,9 +2,9 @@
 
 var _ = require('underscore'),
   async = require('async'),
-  EventEmitter = require('events').EventEmitter,
+  redis = require('../datasources/redis'),
   constants = require('../constants')(),
-  redis = require('../datasources/redis');
+  EventEmitter = require('events').EventEmitter;
 
 // ----------------
 // public functions
