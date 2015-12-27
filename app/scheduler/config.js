@@ -5,7 +5,7 @@ exports = module.exports = {
     name: 'Meduza crawler',
     entity: 'articles',
     job: 'get',
-    module: require('./crawlers/meduza'),
+    module: require('../jobs/crawlers/meduza'),
     hits: 'queue:hits:articles:get',
     start_every: 1000 * 60 // in milliseconds
   },
@@ -13,7 +13,7 @@ exports = module.exports = {
     name: 'Articles parse',
     entity: 'articles',
     job: 'parse',
-    module: require('./articlesParse'),
+    module: require('../jobs/articlesParse'),
     queue: 'queue:articles:add',
     hits: 'queue:hits:articles:add',
     delay: 33, // loop delay in milliseconds

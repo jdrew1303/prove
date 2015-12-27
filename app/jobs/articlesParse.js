@@ -44,7 +44,7 @@ exports = module.exports = function(options, callback, logger) {
       }
     ], function(err) {
       if (err || !articleId) {
-        cb(err, false);
+        cb(err);
       } else {
         workflow.emit('getArticleText');
       }
@@ -93,7 +93,7 @@ exports = module.exports = function(options, callback, logger) {
       if (err) {
         cb(err);
       } else {
-        cb(null, true);
+        cb(null, articleId);
       }
     });
   });

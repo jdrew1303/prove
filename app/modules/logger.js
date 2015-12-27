@@ -1,12 +1,12 @@
 'use strict';
 
-var redis = require('../app/datasources/redis'),
+var redis = require('../datasources/redis'),
   _ = require('underscore'),
   async = require('async'),
-  settings = require('../settings'),
-  constants = require('../app/constants')(),
-  validator = require('../app/modules/validator'),
-  jobsConfig = require('./config'),
+  settings = require('../../settings'),
+  constants = require('../constants')(),
+  validator = require('validator'),
+  jobsConfig = require('./../scheduler/config'),
   EventEmitter = require('events').EventEmitter,
   isStarted;
 

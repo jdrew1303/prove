@@ -2,231 +2,231 @@
 
 var _ = require('underscore'),
   async = require('async'),
-  redis = require('../app/datasources/redis'),
-  logger = require('./logger'),
-  hits = require('./hits')(),
-  queue = require('./queue'),
+  redis = require('datasources/redis'),
+  logger = require('modules/logger'),
+  hits = require('modules/hits')(),
+  queue = require('modules/queue'),
   ENABLE_PROFILING = process.env.ENABLE_PROFILING === 'TRUE',
-  config = require('./config'),
+  config = require('scheduler/config'),
+  timeUtils = require('scheduler/time-utils'),
+  validator = require('modules/validator'),
+  EventEmitter = require('events').EventEmitter,
   scheduledJobs = {},
   schedulerStep = 1000 * 60, // start scheduler every minute
   isStarted;
 
-require('../libs/date'); // extend date object
-
-function getTimestamp(time) {
-  time = time ? new Date(time) : new Date();
-  var year = time.getUTCFullYear(),
-    month = time.getUTCMonth(),
-    day = time.getUTCDate(),
-    hour = time.getUTCHours(),
-    minute = time.getUTCMinutes();
-
-  return `${year}:${month}:${day}:${hour}:${minute}`;
-}
-
-function getNextExecutionTime(jobName) {
-  var jobTime = config[jobName].start_every;
-  jobTime = (_.isFunction(jobTime) ? jobTime() : jobTime);
-  if (jobTime < schedulerStep) {
-    throw new Error(`Scheduler job time can't be less than ${schedulerStep} ms`);
-  }
-
-  return getTimestamp(Date.now() + jobTime);
-}
-
-function addJobToSchedule(jobName) {
-  var jobTime = getNextExecutionTime(jobName);
-  if (!scheduledJobs[jobTime]) {
-    scheduledJobs[jobTime] = [];
-  }
-  scheduledJobs[jobTime].push(jobName);
-}
-
-function updateJobScheduleTime(jobName, time) {
-  var timeCell = scheduledJobs[time];
-  if (timeCell) {
-    timeCell.splice(timeCell.indexOf(jobName), 1);
-    if (!timeCell.length) { // no jobs in current time cell
-      delete scheduledJobs[time];
+const Runner = class {
+  constructor(jobConfig) {
+    if (jobConfig.inProcess) {
+      return;
     }
+    jobConfig.inProcess = true;
+    this.config = jobConfig;
+    jobConfig.module(jobConfig, this.callback, this.log);
   }
-  addJobToSchedule(jobName);
-}
-
-function runner(jobConfig) {
-  if (jobConfig.inProcess) {
-    return;
-  }
-  jobConfig.inProcess = true;
-  var module = jobConfig.module,
-    logInfo = {
-      entity: jobConfig.entity,
-      job: jobConfig.job
-    };
-
-  function log(options, callback) {
-    var opts = options || {},
+  log(options, callback) {
+    var workflow = new EventEmitter(),
+      opts = options || {},
       cb = callback || _.noop,
-      finishReg = /(success|error)/;
+      stage = opts.stage,
+      id = opts.id,
+      type = opts.type,
+      message = opts.message,
+      finishReg = /(success|error)/,
+      jobConfig = this.config,
+      logData = {
+        entity: jobConfig.entity,
+        job: jobConfig.job
+      };
 
-    async.series([
-      function(internalCallback) {
-        if (opts.stage) {
-          hits.add({
-            channel: `${jobConfig.hits}:${opts.stage}` // stage = ('progress' || 'error' || 'success')
-          }, function(err) {
-            if (err) {
-              internalCallback(err);
-            } else {
-              if (finishReg.test(opts.stage)) {
-                // remove job from progress hits if job finished
-                hits.remove({
-                  channel: `${jobConfig.hits}:progress`
-                }, internalCallback);
-              } else {
-                internalCallback();
-              }
-            }
-          });
+    workflow.on('validateParams', function() {
+      validator.check({
+        stage: ['string', stage],
+        id: ['string', id],
+        type: ['string', type],
+        message: ['string', message]
+      }, function(err) {
+        if (err) {
+          cb(err);
         } else {
-          internalCallback();
+          workflow.emit('saveHits');
         }
-      },
-      function(internalCallback) {
-        if (opts.stage) {
-          logInfo.stage = opts.stage;
+      });
+    });
+
+    workflow.on('saveHits', function() {
+      hits.add({
+        channel: `${jobConfig.hits}:${stage}` // stage = ('progress' || 'error' || 'success')
+      }, function(err) {
+        if (err) {
+          cb(err);
+        } else {
+          workflow.emit('saveLogs');
         }
-        if (opts.id) {
-          logInfo.id = opts.id;
+      });
+    });
+
+    workflow.on('saveLogs', function() {
+      if (stage) {
+        logData.stage = stage;
+      }
+      if (id) {
+        logData.id = id;
+      }
+      logger[type](message, logData, function(err) {
+        if (err) {
+          cb(err);
+        } else {
+          workflow.emit('finish');
         }
-        logger[opts.type](opts.message, logInfo, function() {
-          if (finishReg.test(opts.stage)) {
+      });
+    });
+
+    workflow.on('finish', function() {
+      async.series([
+        function(internalCallback) {
+          if (finishReg.test(stage)) {
+            // remove job from progress hits if job finished
+            hits.remove({
+              channel: `${jobConfig.hits}:progress`
+            }, internalCallback);
+          } else {
+            internalCallback();
+          }
+        },
+        function(internalCallback) {
+          if (finishReg.test(stage)) {
             // move logs from progress to error or success
             logger.move({
               to: opts.stage,
               job: jobConfig.job,
               entity: jobConfig.entity,
-              id: logInfo.id
+              id: logData.id
             }, internalCallback);
           } else {
             internalCallback();
           }
-        });
-      }
-    ], cb);
-  }
+        }
+      ], cb);
+    });
 
-  function callback(err, result) {
-    var retryTopic = `${jobConfig.queue}:error`,
+    workflow.emit('validateParams');
+  }
+  callback(jobError, entityId) {
+    var jobConfig = this.config,
+      retryTopic = `${jobConfig.queue}:error`,
       logData;
 
-    if (err) {
+    if (jobError) {
       logData = {
         type: 'error',
         stage: 'error',
-        message: `Error ${jobConfig.name} for ${logInfo.id}: ${err}`
+        message: `Error ${jobConfig.name} for ${entityId}: ${jobError}`
       };
-    } else if (result === true) {
+    } else if (entityId) {
       logData = {
         type: 'info',
         stage: 'success',
-        message: `Success ${jobConfig.name} for ${logInfo.id}`
+        message: `Success ${jobConfig.name} for ${entityId}`
       };
     } else {
+      // if no error and no success. It's mean that no data in queue to process
       jobConfig.inProcess = false;
     }
 
     if (logData) {
-      log(logData, function() {
+      this.log(logData, function(err) {
+        var workflow = new EventEmitter();
         if (err) {
-          // retry again
-          if (jobConfig.retry) {
-            redis.zscore(retryTopic, logInfo.id, function(err, response) {
-              if (response !== jobConfig.retry) {
-                redis.zincrement(retryTopic, logInfo.id, response ? 1 : 2);
-                queue.add([{
-                  entity: jobConfig.entity,
-                  action: jobConfig.job,
-                  id: logInfo.id
-                }]);
+          console.log(err);
+        }
+        workflow.on('conditions', function() {
+          if (jobError) {
+            // retry again
+            if (jobConfig.retry) {
+              redis.zscore(retryTopic, entityId, function(err, response) {
+                if (response !== jobConfig.retry) {
+                  redis.zincrement(retryTopic, entityId, response ? 1 : 2);
+                  queue.add([{
+                    entity: jobConfig.entity,
+                    action: jobConfig.job,
+                    id: entityId
+                  }]);
+                }
+              });
+            } else {
+              workflow.emit('finish');
+            }
+          } else if (entityId) {
+            // if job fails previously, need to remove it from error logs and hits
+            async.waterfall([
+              function(internalCallback) {
+                redis.zscore(retryTopic, entityId, internalCallback);
+              },
+              function(retriedTimes, internalCallback) {
+                if (!retriedTimes) {
+                  internalCallback();
+                } else {
+                  async.parallel([
+                    function(internalCallback2) {
+                      redis.zrem(retryTopic, entityId, internalCallback2);
+                    },
+                    function(internalCallback2) {
+                      hits.remove({
+                        channel: `${jobConfig.hits}:error`,
+                        decrement: Number(retriedTimes)
+                      }, internalCallback2);
+                    },
+                    function(internalCallback2) {
+                      logger.remove({
+                        from: ['progress', 'error'],
+                        job: jobConfig.job,
+                        entity: jobConfig.entity,
+                        id: entityId
+                      }, internalCallback2);
+                    }
+                  ], internalCallback);
+                }
               }
-            });
-          } else {
-            logger.clearTempByEntity({
-              job: jobConfig.job,
-              entity: jobConfig.entity,
-              id: logInfo.id
-            }, function() {
-              var delay = jobConfig.delay || 0;
-              setTimeout(function() {
-                module(jobConfig, callback, log);
-              }, delay);
+            ], function(err) {
+              if (err) {
+                console.log(err);
+              }
+              workflow.emit('finish');
             });
           }
-        } else if (result === true) {
-          // if job fails previously, need to remove it from error logs and hits
-          async.waterfall([
-            function(internalCallback) {
-              redis.zscore(retryTopic, logInfo.id, internalCallback);
-            },
-            function(retriedTimes, internalCallback) {
-              if (!retriedTimes) {
-                internalCallback();
-              } else {
-                async.parallel([
-                  function(internalCallback2) {
-                    redis.zrem(retryTopic, logInfo.id, internalCallback2);
-                  },
-                  function(internalCallback2) {
-                    hits.remove({
-                      channel: `${jobConfig.hits}:error`,
-                      decrement: Number(retriedTimes)
-                    }, internalCallback2);
-                  },
-                  function(internalCallback2) {
-                    logger.remove({
-                      from: ['progress', 'error'],
-                      job: jobConfig.job,
-                      entity: jobConfig.entity,
-                      id: logInfo.id
-                    }, internalCallback2);
-                  }
-                ], internalCallback);
-              }
-            }
-          ], function() {
-            logger.clearTempByEntity({
-              job: jobConfig.job,
-              entity: jobConfig.entity,
-              id: logInfo.id
-            }, function() {
-              var delay = jobConfig.delay || 0;
-              setTimeout(function() {
-                module(jobConfig, callback, log);
-              }, delay);
-            });
+        });
+
+        workflow.on('finish', function() {
+          logger.clearTempByEntity({
+            job: jobConfig.job,
+            entity: jobConfig.entity,
+            id: entityId
+          }, function() {
+            var delay = jobConfig.delay || 0;
+            setTimeout(function() {
+              jobConfig.module(jobConfig, callback, log);
+            }, delay);
           });
-        }
+        });
+
+        workflow.emit('conditions');
       });
     }
   }
+};
 
-  module(jobConfig, callback, log);
+function timeJobsChecker() {
+  var jobs = timeUtils.getJobs(scheduledJobs);
+  _.each(jobs, function(jobItem) {
+    new Runner(config[jobItem]);
+  });
+  setTimeout(timeJobsChecker, schedulerStep);
 }
 
-function cronChecker() {
-  var curTimestamp = getTimestamp(),
-    timeCell = scheduledJobs[curTimestamp];
-
-  if (timeCell && timeCell.length) {
-    _.each(timeCell, function(jobItem) {
-      updateJobScheduleTime(jobItem, curTimestamp);
-      runner(config[jobItem]);
-    });
-  }
-  setTimeout(cronChecker, schedulerStep);
-}
+// ----------------
+// start
+// ----------------
 
 if (!isStarted) {
   let hasTimeJobs;
@@ -236,23 +236,23 @@ if (!isStarted) {
     if (item.queue) {
       console.log(`Subscribe to ${item.queue}`);
       redis.subscribe(item.queue);
-      if (ENABLE_PROFILING) {
-        item.profiling = true;
-      }
     }
     if (item.start_every) {
-      addJobToSchedule(id);
+      timeUtils.addJobToSchedule(id, scheduledJobs, schedulerStep);
       hasTimeJobs = true;
+    }
+    if (ENABLE_PROFILING) {
+      item.profiling = true;
     }
   });
   redis.on('message', function(channel) {
     _.each(config, function(item) {
       if (item.queue === channel) {
-        runner(item);
+        new Runner(item);
       }
     });
   });
   if (hasTimeJobs) {
-    setTimeout(cronChecker, schedulerStep);
+    setTimeout(timeJobsChecker, schedulerStep);
   }
 }

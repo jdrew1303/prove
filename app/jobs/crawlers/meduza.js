@@ -7,9 +7,9 @@ var _ = require('underscore'),
   qs = require('querystring'),
   Q = require('q'),
   jsdom = require('jsdom'),
-  psql = require('../datasources/postgres'),
-  queue = require('../modules/queue'),
-  checkExisting = require('../modules/check-existing'),
+  psql = require('../../datasources/postgres'),
+  queue = require('../../modules/queue'),
+  checkExisting = require('../../modules/check-existing'),
   baseUrl = 'https://meduza.io/api/v3',
   pagesLimit = 100,
   perPage = 100,
@@ -21,7 +21,7 @@ var _ = require('underscore'),
     'shapito'
   ],
   EventEmitter = require('events').EventEmitter,
-  myEventEmitter = require('../utils/event-emitter');
+  myEventEmitter = require('../../utils/event-emitter');
 
 exports = module.exports = function(options, callback, logger) {
   var opts = options || {},
@@ -186,7 +186,7 @@ exports = module.exports = function(options, callback, logger) {
       console.log('Saved articles: %d', savedArticles);
       spentTime = ((new Date().getTime() - spentTime.getTime()) / 1000 / 60).toFixed(2);
       console.log('Spent time: %d minute', spentTime);
+      cb(null, false);
     }
-    cb(null, false);
   });
 };
