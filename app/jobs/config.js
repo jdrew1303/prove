@@ -5,7 +5,7 @@ exports = module.exports = {
     name: 'Meduza crawler',
     entity: 'articles',
     job: 'get',
-    module: require('../crawlers/meduza'),
+    module: require('./crawlers/meduza'),
     hits: 'queue:hits:articles:get',
     start_every: 1000 * 60 // in milliseconds
   },
