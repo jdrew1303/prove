@@ -7,9 +7,9 @@ var _ = require('underscore'),
   qs = require('querystring'),
   Q = require('q'),
   jsdom = require('jsdom'),
-  psql = require('../../datasources/postgres'),
-  queue = require('../../modules/queue'),
-  checkExisting = require('../../modules/check-existing'),
+  psql = require('../datasources/postgres'),
+  queue = require('../modules/queue'),
+  checkExisting = require('../modules/check-existing'),
   baseUrl = 'https://meduza.io/api/v3',
   pagesLimit = 100,
   perPage = 100,
@@ -21,12 +21,10 @@ var _ = require('underscore'),
     'shapito'
   ],
   EventEmitter = require('events').EventEmitter,
-  myEventEmitter = require('../../utils/event-emitter');
+  myEventEmitter = require('../utils/event-emitter');
 
-exports = module.exports = function(options, callback, logger) {
+exports = module.exports = function(options) {
   var opts = options || {},
-    cb = callback || _.noop,
-    log = logger || _.noop,
     savedArticles = 0,
     spentTime = new Date();
 
@@ -142,23 +140,11 @@ exports = module.exports = function(options, callback, logger) {
               } else {
                 savedArticles += 1;
                 var newArticleId = response.rows[0].id; // id of inserted article
-                async.parallel([
-                  function(internalCallback3) {
-                    log({
-                      type: 'info',
-                      id: newArticleId,
-                      stage: 'progress',
-                      message: `Downloaded and saved`
-                    }, internalCallback3);
-                  },
-                  function(internalCallback3) {
-                    queue.add([{
-                      entity: 'articles',
-                      action: 'add',
-                      id: newArticleId
-                    }], internalCallback3);
-                  }
-                ], internalCallback2);
+                queue.add([{
+                  entity: 'articles',
+                  action: 'add',
+                  id: newArticleId
+                }], internalCallback2);
               }
             });
           });
@@ -180,13 +166,12 @@ exports = module.exports = function(options, callback, logger) {
     workflow.emit('getArticlesList');
   }, function(err) {
     if (err) {
-      cb(err);
+      console.log(err);
     } else {
       console.log('Crawler for `Meduza` is stopped');
       console.log('Saved articles: %d', savedArticles);
       spentTime = ((new Date().getTime() - spentTime.getTime()) / 1000 / 60).toFixed(2);
       console.log('Spent time: %d minute', spentTime);
-      cb(null, false);
     }
   });
 };

@@ -2,17 +2,14 @@
 
 var _ = require('underscore'),
   async = require('async'),
-  redis = require('datasources/redis'),
-  logger = require('modules/logger'),
-  hits = require('modules/hits')(),
-  queue = require('modules/queue'),
+  redis = require('./datasources/redis'),
+  logger = require('./modules/logger'),
+  hits = require('./modules/hits')(),
+  queue = require('./modules/queue'),
   ENABLE_PROFILING = process.env.ENABLE_PROFILING === 'TRUE',
-  config = require('scheduler/config'),
-  timeUtils = require('scheduler/time-utils'),
-  validator = require('modules/validator'),
+  config = require('./jobs/config'),
+  validator = require('./modules/validator'),
   EventEmitter = require('events').EventEmitter,
-  scheduledJobs = {},
-  schedulerStep = 1000 * 60, // start scheduler every minute
   isStarted;
 
 const Runner = class {
@@ -22,7 +19,7 @@ const Runner = class {
     }
     jobConfig.inProcess = true;
     this.config = jobConfig;
-    jobConfig.module(jobConfig, this.callback, this.log);
+    jobConfig.module(jobConfig, ((err, entityId) => this.callback(err, entityId)), ((options, callback) => this.log(options, callback)));
   }
   log(options, callback) {
     var workflow = new EventEmitter(),
@@ -39,16 +36,17 @@ const Runner = class {
         job: jobConfig.job
       };
 
-    workflow.on('validateParams', function() {
+    workflow.on('validateParams', () => {
       validator.check({
         stage: ['string', stage],
-        id: ['string', id],
+        id: ['number', id],
         type: ['string', type],
         message: ['string', message]
-      }, function(err) {
+      }, (err) => {
         if (err) {
           cb(err);
         } else {
+          this.entityId = id;
           workflow.emit('saveHits');
         }
       });
@@ -112,26 +110,28 @@ const Runner = class {
 
     workflow.emit('validateParams');
   }
-  callback(jobError, entityId) {
+  callback(jobError, result) {
     var jobConfig = this.config,
       retryTopic = `${jobConfig.queue}:error`,
-      logData;
+      entityId = this.entityId,
+      logData = {
+        id: entityId
+      };
+
+    jobConfig.inProcess = false;
 
     if (jobError) {
-      logData = {
+      _.extend(logData, {
         type: 'error',
         stage: 'error',
         message: `Error ${jobConfig.name} for ${entityId}: ${jobError}`
-      };
-    } else if (entityId) {
-      logData = {
+      });
+    } else if (result) {
+      _.extend(logData, {
         type: 'info',
         stage: 'success',
         message: `Success ${jobConfig.name} for ${entityId}`
-      };
-    } else {
-      // if no error and no success. It's mean that no data in queue to process
-      jobConfig.inProcess = false;
+      });
     }
 
     if (logData) {
@@ -157,7 +157,7 @@ const Runner = class {
             } else {
               workflow.emit('finish');
             }
-          } else if (entityId) {
+          } else if (result) {
             // if job fails previously, need to remove it from error logs and hits
             async.waterfall([
               function(internalCallback) {
@@ -197,15 +197,15 @@ const Runner = class {
           }
         });
 
-        workflow.on('finish', function() {
+        workflow.on('finish', () => {
           logger.clearTempByEntity({
             job: jobConfig.job,
             entity: jobConfig.entity,
             id: entityId
-          }, function() {
+          }, () => {
             var delay = jobConfig.delay || 0;
-            setTimeout(function() {
-              jobConfig.module(jobConfig, callback, log);
+            setTimeout(() => {
+              new Runner(jobConfig);
             }, delay);
           });
         });
@@ -216,30 +216,17 @@ const Runner = class {
   }
 };
 
-function timeJobsChecker() {
-  var jobs = timeUtils.getJobs(scheduledJobs);
-  _.each(jobs, function(jobItem) {
-    new Runner(config[jobItem]);
-  });
-  setTimeout(timeJobsChecker, schedulerStep);
-}
-
 // ----------------
 // start
 // ----------------
 
 if (!isStarted) {
-  let hasTimeJobs;
   isStarted = true;
   _.each(config, function(item, id) {
     item.id = id;
     if (item.queue) {
       console.log(`Subscribe to ${item.queue}`);
       redis.subscribe(item.queue);
-    }
-    if (item.start_every) {
-      timeUtils.addJobToSchedule(id, scheduledJobs, schedulerStep);
-      hasTimeJobs = true;
     }
     if (ENABLE_PROFILING) {
       item.profiling = true;
@@ -252,7 +239,4 @@ if (!isStarted) {
       }
     });
   });
-  if (hasTimeJobs) {
-    setTimeout(timeJobsChecker, schedulerStep);
-  }
 }

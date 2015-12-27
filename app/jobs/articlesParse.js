@@ -68,6 +68,8 @@ exports = module.exports = function(options, callback, logger) {
     tomita.getFacts(articleInfo.text, function(err, response) {
       if (err) {
         cb(err);
+      } else if (!response) {
+        cb('No facts');
       } else {
         _.each(response.Fact, function(fact) {
           var factField = fact.Field1;
@@ -93,7 +95,7 @@ exports = module.exports = function(options, callback, logger) {
       if (err) {
         cb(err);
       } else {
-        cb(null, articleId);
+        cb(null, true);
       }
     });
   });

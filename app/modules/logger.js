@@ -5,8 +5,8 @@ var redis = require('../datasources/redis'),
   async = require('async'),
   settings = require('../../settings'),
   constants = require('../constants')(),
-  validator = require('validator'),
-  jobsConfig = require('./../scheduler/config'),
+  validator = require('./validator'),
+  jobsConfig = require('../jobs/config'),
   EventEmitter = require('events').EventEmitter,
   isStarted;
 

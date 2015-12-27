@@ -23,7 +23,7 @@ function getFacts(text, callback) {
   });
 
   workflow.on('parse', function() {
-    new Tomita(text, path.join(__dirname, '../../tomita/config.proto'), cb);
+    new Tomita(text, path.join(__dirname, '../tomita/config.proto'), cb);
   });
 
   workflow.emit('validateParams');

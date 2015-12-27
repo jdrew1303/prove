@@ -1,9 +1,9 @@
 'use strict';
 
 var _ = require('underscore'),
-  settings = require('../settings'),
-  redis = require('../app/datasources/redis'),
-  constants = require('../app/constants')(),
+  settings = require('../../settings'),
+  redis = require('../datasources/redis'),
+  constants = require('../constants')(),
   ts;
 
 const prefix = 'queue:hits';
