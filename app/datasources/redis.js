@@ -6,14 +6,16 @@ var _ = require('underscore'),
   log = require('../modules/log'),
   constants = require('../constants')(),
   redis = require('redis'),
+  TimeSeries = require('../../libs/timeseries'),
   db_prefix = settings.REDIS_PREFIX,
-  client;
+  client,
+  subscribeClient, // needed because: Once the client enters the subscribed state it is not supposed to issue any other commands, except for additional SUBSCRIBE, PSUBSCRIBE, UNSUBSCRIBE and PUNSUBSCRIBE commands.
+  db_address = '127.0.0.1',
+  db_password = process.env.REDIS_PASSWORD || '',
+  db_port = 6379;
 
 if (!client) {
-  let dbConnected,
-    db_address = '127.0.0.1',
-    db_password = process.env.REDIS_PASSWORD || '',
-    db_port = 6379;
+  let dbConnected;
 
   client = redis.createClient(db_port, db_address);
   client.auth(db_password);
@@ -27,6 +29,24 @@ if (!client) {
   client.on('ready', function() {
     dbConnected = true;
     console.log('Redis connected: %s:%d', db_address, db_port);
+  });
+}
+
+if (!subscribeClient) {
+  let dbConnected;
+
+  subscribeClient = redis.createClient(db_port, db_address);
+  subscribeClient.auth(db_password);
+
+  subscribeClient.on('error', function(err) {
+    console.log('Redis ' + err);
+    if (!dbConnected) {
+      process.exit(1);
+    }
+  });
+  subscribeClient.on('ready', function() {
+    dbConnected = true;
+    console.log('Redis connected in SUBSCRIBE MODE to: %s:%d', db_address, db_port);
   });
 }
 
@@ -101,9 +121,8 @@ function multi(operations, callback) {
         multiHandler[operation](topic, oItem.score, oItem.id);
         break;
       case 'zrem':
-        multiHandler[operation](topic, oItem.id);
-        break;
       case 'zscore':
+      case 'hdel':
         multiHandler[operation](topic, oItem.id);
         break;
       case 'del':
@@ -145,6 +164,26 @@ function hgetall(topic, callback) {
   }
 }
 
+function hpage(listtopic, datatopic, options, callback) {
+  var cb = callback || noop,
+    opts = options || {},
+    showAll = opts.per_page === 0,
+    start = showAll ? 0 : (opts.start || 0),
+    end = showAll ? -1 : (opts.end !== undefined ? opts.end : 19),
+    orderFunction = opts.ascending ? 'zrange' : 'zrevrange';
+
+  if (listtopic && datatopic) {
+    client.zcard(db_prefix + 'z:' + listtopic, function(err, total) {
+      client[orderFunction](db_prefix + 'z:' + listtopic, start, end, 'withscores', function(err, members) {
+        opts.total = parseInt(total, 10);
+        getMembers(datatopic, members, opts, cb);
+      });
+    });
+  } else {
+    cb(true, null);
+  }
+}
+
 function zrem(topic, id, callback) {
   var cb = callback || _.noop;
   client.zrem(db_prefix + 'z:' + topic, id, function(err) {
@@ -162,6 +201,35 @@ function zadd(topic, score, id, callback) {
 function zall(topic, callback) {
   var cb = callback || _.noop;
   client.zrevrange(db_prefix + 'z:' + topic, 0, -1, cb);
+}
+
+function zremrange(topic, startscore, endscore, callback) {
+  var cb = callback || _.noop;
+  if (topic) {
+    client.zremrangebyscore(db_prefix + 'z:' + topic, startscore || 0, endscore || 0, cb);
+  } else {
+    cb(true, null);
+  }
+}
+
+function zscore(topic, id, callback) {
+  var cb = callback || _.noop;
+  if (topic && id) {
+    client.zscore(db_prefix + 'z:' + topic, id, function(err, data) {
+      cb(err, Number(data));
+    });
+  } else {
+    cb(true, null);
+  }
+}
+
+function zincrement(topic, id, increment, callback) {
+  var cb = callback || _.noop;
+  if (topic && id) {
+    client.zincrby(db_prefix + 'z:' + topic, increment || 1, id, cb);
+  } else {
+    cb(true, null);
+  }
 }
 
 function union(topics, metatopic, callback) {
@@ -215,6 +283,38 @@ function setpop(key, callback) {
   }
 }
 
+function subscribe(channelName) {
+  return channelName ? subscribeClient.subscribe(channelName) : null;
+}
+
+function on(event, callback) {
+  var cb = callback || noop;
+  if (event) {
+    subscribeClient.on(event, cb);
+  } else {
+    cb(true, null);
+  }
+}
+
+function publish(event, message, callback) {
+  var cb = callback || noop;
+  if (event && message) {
+    client.publish(event, message, cb);
+  } else {
+    cb(true, null);
+  }
+}
+
+function createTimeSeries(topic) {
+  var result;
+  if (!topic) {
+    result = null;
+  } else {
+    result = new TimeSeries(client, db_prefix + topic);
+  }
+  return result;
+}
+
 function flushall(callback) {
   var cb = callback || _.noop;
   if (process.env.CURRENT_ENV !== 'TEST') {
@@ -240,12 +340,20 @@ exports = module.exports = {
   hget,
   hset,
   hgetall,
+  hpage,
   zadd,
   zrem,
   zall,
+  zremrange,
+  zscore,
+  zincrement,
   union,
   counter,
   setadd,
   setpop,
+  subscribe,
+  on,
+  publish,
+  createTimeSeries,
   flushall
 };

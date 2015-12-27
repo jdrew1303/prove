@@ -3,8 +3,8 @@
 var _ = require('underscore'),
   async = require('async'),
   EventEmitter = require('events').EventEmitter,
-  constants = require('../constants')(),
-  db = require('../datasources/redis');
+  constants = require('../app/constants')(),
+  redis = require('../app/datasources/redis');
 
 // ----------------
 // public functions
@@ -35,9 +35,18 @@ function add(options, callback) {
   workflow.on('saveQueue', function() {
     async.each(opts, function(item, internalCallback) {
       var topic = `queue:${item.entity}:${item.action}`;
-      db.setadd(topic, item.id, function(err) {
-        internalCallback(err ? constants.dictionary.DATABASE_ERROR : null);
-      });
+      async.parallel([
+        function(internalCallback2) {
+          redis.setadd(topic, item.id, function(err) {
+            internalCallback2(err ? constants.dictionary.DATABASE_ERROR : null);
+          });
+        },
+        function(internalCallback2) {
+          redis.publish(topic, Date.now(), function(err) {
+            internalCallback2(err ? constants.dictionary.DATABASE_ERROR : null);
+          });
+        }
+      ], internalCallback);
     }, cb);
   });
 

@@ -1,6 +1,6 @@
 'use strict';
 
-var db = require('../datasources/postgres'),
+var psql = require('../datasources/postgres'),
   validator = require('../modules/validator'),
   EventEmitter = require('events').EventEmitter;
 
@@ -29,7 +29,7 @@ exports = module.exports = function(urls, type) {
           queryConditionStr += ' OR ';
         }
       }
-      db.query(`SELECT url FROM articles WHERE ${queryConditionStr}`, function(err, response) {
+      psql.query(`SELECT url FROM articles WHERE ${queryConditionStr}`, function(err, response) {
         if (err) {
           reject(err);
         } else {
