@@ -11,6 +11,15 @@ exports = module.exports = {
 
   SENTRY_URL: '',
 
+  JOBS: {
+    articles: {
+      add: {
+        hits: 'queue:hits:articles:add',
+        logs: 'queue:logs:articles:add'
+      }
+    }
+  },
+
   LOGS_GRANULARITIES: {
     last_hour: 1000 * 60 * 60,
     last_day: 1000 * 60 * 60 * 24,

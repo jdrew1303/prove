@@ -1,0 +1,89 @@
+.navbar {
+  height: 50px;
+  background: linear-gradient(to bottom, #3c3c3c 0%, #222 100%);
+  color: #9D9D9D;
+  z-index: 50;
+}
+.navbar-logo {
+  float: left;
+  padding: 10px;
+  margin-right: 30px;
+  font-size: 18px;
+  color: #FFF;
+}
+.navbar-menu,
+.navbar-menu ul {
+  list-style: none;
+}
+.navbar-menu {
+  float: left;
+  width: 300px;
+  font-size: 15px;
+}
+.navbar-menu-item-wrap {
+  position: relative;
+  float: left;
+}
+.navbar-menu-item {
+  padding: 13px 15px;
+  cursor: pointer;
+}
+.navbar-menu-item-wrap:hover .navbar-menu-item {
+  color: #fff;
+}
+.navbar-submenu {
+  display: none;
+  overflow: hidden;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: -2px;
+  min-width: 100px;
+  background: #fff;
+  border-top: none;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, .5);
+  white-space: nowrap;
+  text-transform: capitalize;
+  z-index: 100;
+}
+.navbar-menu-item-wrap:hover .navbar-submenu,
+.navbar-menu-item-wrap:focus .navbar-submenu {
+  display: block;
+}
+.navbar-submenu a {
+  display: block;
+  padding: 5px 10px;
+  font-size: 13px;
+  color: #333;
+}
+.navbar-submenu a:hover {
+  background-color: #eee;
+}
+.caret {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-left: 8px;
+  vertical-align: middle;
+  border-top: 4px dashed;
+  border-right: 4px solid transparent;
+  border-left: 4px solid transparent;
+}
+
+#navbar-env {
+  float: right;
+  padding: 8px 20px 0;
+  list-style: none;
+}
+#navbar-env li {
+  display: inline-block;
+  margin: 0 5px;
+  padding: 5px 10px;
+  border-radius: 10px;
+  font-size: 15px;
+  cursor: pointer;
+}
+#navbar-env li.selected {
+  background-color: #000;
+  color: #FFF;
+}
