@@ -4,7 +4,6 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { Link } from 'react-router';
 import * as storage from 'modules/storage';
-import * as EventManager from 'modules/events';
 import * as _ from 'underscore';
 
 import 'components/navbar/style';

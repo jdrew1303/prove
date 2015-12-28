@@ -13,7 +13,6 @@ function init() {
 
     connect = io(address);
   }
-  
   return {
     on: function(eventName, handler) {
       if (eventName && handler) {

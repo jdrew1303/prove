@@ -3,8 +3,6 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import SocketManager from 'modules/socket';
-import * as EventManager from 'modules/events';
-import * as storage from 'modules/storage';
 import { Link } from 'react-router';
 import Chart from 'components/chart/code';
 import Icon from 'react-fa';

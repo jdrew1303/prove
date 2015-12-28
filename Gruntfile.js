@@ -9,6 +9,7 @@ var seleniumServer = require('selenium-standalone'),
   wdioConfFile = './wdio.conf.js';
 
 module.exports = function(grunt) {
+  require('load-grunt-tasks')(grunt);
   grunt.loadNpmTasks('grunt-webdriver');
   grunt.loadNpmTasks('grunt-jscs');
   grunt.loadNpmTasks('grunt-contrib-jshint');
@@ -41,7 +42,8 @@ module.exports = function(grunt) {
     },
     jscs: {
       src: [
-        'app/**/*.js'
+        'app/**/*.js',
+        'dashboard/**/*.js'
       ],
       options: {
         preset: 'airbnb',
@@ -53,7 +55,17 @@ module.exports = function(grunt) {
         jshintrc: '.jshintrc'
       },
       all: [
-        'app/**/*.js'
+        'app/**/*.js',
+        'dashboard/**/*.js'
+      ]
+    },
+    eslint: {
+      options: {
+        configFile: '.eslintrc'
+      },
+      target: [
+        'dashboard/**/*.js',
+        'dashboard/**/*.jsx'
       ]
     }
   });
@@ -179,4 +191,6 @@ module.exports = function(grunt) {
   ]);
 
   grunt.registerTask('build', ['webpack:build']);
+
+  grunt.registerTask('syntax', ['jscs', 'jshint', 'eslint']);
 };

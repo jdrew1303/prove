@@ -3,7 +3,6 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import SocketManager from 'modules/socket';
-import * as EventManager from 'modules/events';
 import * as storage from 'modules/storage';
 import { Link } from 'react-router';
 import Chart from 'components/chart/code';
@@ -123,7 +122,7 @@ class Dashboard extends React.Component {
                     </div>
                   );
                 } else {
-                  return <div key={chartId}></div>
+                  return <div key={chartId}></div>;
                 }
               })}
             </div>

@@ -25,6 +25,7 @@
     "beforeEach": true,
     "after": true,
     "afterEach": true,
-    "browser": true
+    "browser": true,
+    "io": true
   }
 }

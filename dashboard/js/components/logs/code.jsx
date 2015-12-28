@@ -3,8 +3,6 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import SocketManager from 'modules/socket';
-import * as EventManager from 'modules/events';
-import * as storage from 'modules/storage';
 import Pager from 'components/pager/code';
 import * as _ from 'underscore';
 
