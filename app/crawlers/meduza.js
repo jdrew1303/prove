@@ -23,15 +23,16 @@ var _ = require('underscore'),
   EventEmitter = require('events').EventEmitter,
   myEventEmitter = require('../utils/event-emitter');
 
-exports = module.exports = function(options) {
+exports = module.exports = function(options, callback) {
   var opts = options || {},
+    cb = callback || _.noop,
     savedArticles = 0,
     spentTime = new Date();
 
   console.log('Crawler for `Meduza` is started');
 
   async.each(types, function(type, internalCallback) {
-    var curPage = 1,
+    var curPage = 0,
       workflow = opts.profiling ? myEventEmitter() : new EventEmitter();
 
     workflow.on('getArticlesList', function() {
@@ -87,7 +88,6 @@ exports = module.exports = function(options) {
 
     workflow.on('getArticlesText', function(urls) {
       async.each(urls, function(article_url, internalCallback2) {
-        console.log(`${baseUrl}/${article_url}`);
         request.get({
           url: `${baseUrl}/${article_url}`,
           encoding: null // to get response as Buffer, needed for gunzip
@@ -104,7 +104,7 @@ exports = module.exports = function(options) {
 
           var text = body.content.body,
             title = body.title,
-            published_at = new Date(body.published_at);
+            published_at = new Date(body.published_at * 1000);
 
           jsdom.env(text, function(err, window) {
             if (err) {
@@ -138,7 +138,7 @@ exports = module.exports = function(options) {
               'published'
             ];
 
-            psql.query(`INSERT INTO articles (${fields.join(',')}) VALUES (1, $1::text, $2::text, $3::text, $4) RETURNING id`, [article_url, text, title, published_at], function(err, response) {
+            psql.query(`INSERT INTO articles (${fields.join(',')}) VALUES (1, $1::text, $2::text, $3::text, $4::timestamp) RETURNING id`, [article_url, text, title, published_at], function(err, response) {
               if (err) {
                 internalCallback2(err);
               } else {
@@ -170,12 +170,13 @@ exports = module.exports = function(options) {
     workflow.emit('getArticlesList');
   }, function(err) {
     if (err) {
-      console.log(err);
+      cb(err);
     } else {
       console.log('Crawler for `Meduza` is stopped');
       console.log('Saved articles: %d', savedArticles);
       spentTime = ((new Date().getTime() - spentTime.getTime()) / 1000 / 60).toFixed(2);
       console.log('Spent time: %d minute', spentTime);
+      cb(null, null);
     }
   });
 };

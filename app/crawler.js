@@ -13,7 +13,12 @@ const Runner = class {
       return;
     }
     jobConfig.inProcess = true;
-    jobConfig.module(jobConfig);
+    jobConfig.module(jobConfig, function(err) {
+      if (err) {
+        console.log(err);
+      }
+      jobConfig.inProcess = false;
+    });
   }
 };
 
@@ -65,19 +70,13 @@ function timeJobsChecker() {
 }
 
 if (!isStarted) {
-  let hasTimeJobs;
   isStarted = true;
   _.each(config, function(item, id) {
     item.id = id;
-    if (item.start_every) {
-      addJobToSchedule(id);
-      hasTimeJobs = true;
-    }
+    addJobToSchedule(id);
     if (ENABLE_PROFILING) {
       item.profiling = true;
     }
   });
-  if (hasTimeJobs) {
-    setTimeout(timeJobsChecker, schedulerStep);
-  }
+  setTimeout(timeJobsChecker, schedulerStep);
 }

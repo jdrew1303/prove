@@ -226,10 +226,8 @@ if (!isStarted) {
   isStarted = true;
   _.each(config, function(item, id) {
     item.id = id;
-    if (item.queue) {
-      console.log(`Subscribe to ${item.queue}`);
-      redis.subscribe(item.queue);
-    }
+    console.log(`Subscribe to ${item.queue}`);
+    redis.subscribe(item.queue);
     if (ENABLE_PROFILING) {
       item.profiling = true;
     }
