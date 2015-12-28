@@ -7,8 +7,8 @@ const pushToClientEvery = 5000; // 5 seconds
 
 function getLogs(client, force) {
   logsModel.get({
-    env: client.logsData.env,
     entity: client.logsData.entity,
+    action: client.logsData.action,
     stage: client.logsData.stage,
     gran: client.logsData.gran,
     page: client.logsData.page
@@ -34,8 +34,8 @@ setInterval(function() {
 socket.on('logs', function(data) {
   data = data || {};
   this.logsData = {
-    env: data.env,
     entity: data.entity,
+    action: data.action,
     stage: data.stage,
     gran: data.gran,
     page: data.page

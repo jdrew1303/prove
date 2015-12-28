@@ -16,12 +16,7 @@ class Dashboard extends React.Component {
   state = {
     data: null,
     charts: [
-      'users:remove',
-      'posts:remove',
-      'images:upload',
-      'video:convert',
-      'gif:convert',
-      'audio:convert'
+      'articles:add'
     ],
     waiting: false
   };
@@ -41,9 +36,6 @@ class Dashboard extends React.Component {
   chartClickHandler() {
     storage.set('entity', this.entity);
   }
-  envChanged() {
-    window.location.hash = '/';
-  }
   onStats = (data) => {
     this.onSocketUpdate = true;
     this.setState({
@@ -52,9 +44,7 @@ class Dashboard extends React.Component {
     });
   };
   onUpdate() {
-    var curEnv = storage.get('env');
     SocketManager.emit('stats', {
-      env: curEnv,
       type: 'stats'
     });
   };
@@ -72,16 +62,13 @@ class Dashboard extends React.Component {
   };
   componentDidMount() {
     SocketManager.on('stats', this.onStats);
-    EventManager.on('envChanged', this.envChanged);
     this.onUpdate();
   }
   componentWillUnmount() {
     SocketManager.off('stats', this.onStats);
-    EventManager.off('envChanged', this.envChanged);
   }
   render() {
     var state = this.state,
-      curEnv = storage.get('env'),
       result = {};
 
     for (let i = 0, l = Math.ceil(state.charts.length / 3); i < l; i += 1) {
@@ -107,6 +94,13 @@ class Dashboard extends React.Component {
         }
       });
     });
+    _.each(result, function(item) {
+      if (item.length < 3) {
+        for (let i = 0, l = 3 - item.length; i < l; i += 1) {
+          item.push(null);
+        }
+      }
+    });
 
     return (
       <div className={state.waiting ? 'waiting' : ''}>
@@ -114,19 +108,23 @@ class Dashboard extends React.Component {
           return (
             <div key={roId} className="chartsWrap">
               {_.map(row, (chart, chartId) => {
-                return (
-                  <div key={chartId}>
-                    <div className="dashboard-chart-name">
-                      {this.getChannelName(chart.channel)} ({this.getTotal(chart.value)})
+                if (chart !== null) {
+                  return (
+                    <div key={chartId}>
+                      <div className="dashboard-chart-name">
+                        {this.getChannelName(chart.channel)} ({this.getTotal(chart.value)})
+                      </div>
+                      <div className="relative">
+                        <Chart data={chart.value} gran={chart.gran} type="success" />
+                        <Link to={`/logs/${this.getEntityName(chart.channel)}/success/${chart.gran}`} onClick={this.chartClickHandler} entity={this.getEntityName(chart.channel)} className="blocker_waiting">
+                          <Icon spin name="circle-o-notch" className="blocker_loader" />
+                        </Link>
+                      </div>
                     </div>
-                    <div className="relative">
-                      <Chart data={chart.value} gran={chart.gran} type="success" />
-                      <Link to={`/${curEnv}/logs/${this.getEntityName(chart.channel)}/success/${chart.gran}`} onClick={this.chartClickHandler} entity={this.getEntityName(chart.channel)} className="blocker_waiting">
-                        <Icon spin name="circle-o-notch" className="blocker_loader" />
-                      </Link>
-                    </div>
-                  </div>
-                );
+                  );
+                } else {
+                  return <div key={chartId}></div>
+                }
               })}
             </div>
           );

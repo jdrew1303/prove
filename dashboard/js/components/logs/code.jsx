@@ -40,8 +40,8 @@ class Logs extends React.Component {
       page = window.location.hash.replace(/^.+page=(\d+).+$/, '$1');
 
     SocketManager.emit('logs', {
-      env: splat[0],
-      entity: splat[1],
+      entity: splat[0],
+      action: splat[1],
       stage: splat[2],
       gran: splat[3],
       page: Number(page) || 1
@@ -53,13 +53,6 @@ class Logs extends React.Component {
       data: data
     });
   };
-  envChanged = () => {
-    var splat = this.props.params.splat,
-      curEnv = storage.get('env'),
-      curEntity = storage.get('entity');
-
-    window.location.hash = `${curEnv}/logs/${curEntity}/${splat[2]}/${splat[3]}`;
-  };
   componentDidUpdate = () => {
     if (this.onSocketUpdate) {
       this.onSocketUpdate = false;
@@ -69,12 +62,10 @@ class Logs extends React.Component {
   };
   componentDidMount() {
     SocketManager.on('logs', this.onLogs);
-    EventManager.on('envChanged', this.envChanged);
     this.onUpdate();
   }
   componentWillUnmount() {
     SocketManager.off('logs', this.onLogs);
-    EventManager.off('envChanged', this.envChanged);
   }
   render() {
     var state = this.state,

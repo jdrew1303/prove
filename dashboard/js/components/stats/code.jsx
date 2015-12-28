@@ -23,8 +23,7 @@ class Stats extends React.Component {
   onUpdate() {
     var splat = this.props.params.splat;
     SocketManager.emit('stats', {
-      env: splat[0],
-      entity: splat[1],
+      entity: splat,
       type: 'stats'
     });
   };
@@ -35,12 +34,6 @@ class Stats extends React.Component {
       waiting: false
     });
   };
-  envChanged() {
-    var curEnv = storage.get('env'),
-      curEntity = storage.get('entity');
-
-    window.location.hash = `${curEnv}/stats/${curEntity}`;
-  }
   getChannelName(channel) {
     return channel.replace('queue:hits:', '').replace(':', ' ');
   }
@@ -68,22 +61,20 @@ class Stats extends React.Component {
   };
   componentDidMount() {
     SocketManager.on('stats', this.onStats);
-    EventManager.on('envChanged', this.envChanged);
     this.onUpdate();
   }
   componentWillUnmount() {
     SocketManager.off('stats', this.onStats);
-    EventManager.off('envChanged', this.envChanged);
   }
   render() {
     var state = this.state,
       splat = this.props.params.splat,
-      env = splat[0],
-      entity = splat[1];
+      entity = splat;
 
     return (
       <div className={state.waiting ? 'waiting' : ''}>
         {state.data ? _.map(state.data, (channel, channelKey) => {
+          var entityAction = channelKey.match(/[^:]+$/)[0];
           return (
             <div key={channelKey}>
               <h2 className="charts_channel">
@@ -105,7 +96,7 @@ class Stats extends React.Component {
                             </div>
                             <div className="relative">
                               <Chart data={data} gran={granKey} type={key} />
-                              <Link to={`/${env}/logs/${entity}/${key}/${granKey}`} className="blocker_waiting">
+                              <Link to={`/logs/${entity}/${entityAction}/${key}/${granKey}`} className="blocker_waiting">
                                 <Icon spin name="circle-o-notch" className="blocker_loader" />
                               </Link>
                             </div>

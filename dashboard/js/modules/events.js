@@ -3,8 +3,7 @@
 import * as _ from 'underscore';
 
 var events = [
-  'ready',
-  'envChanged'
+  'ready'
 ];
 
 var _evs = events;

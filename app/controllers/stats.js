@@ -17,7 +17,6 @@ function getStats(client, force) {
     });
   });
   statsModel.get({
-    env: client.statsData.env,
     channels: channels
   }, function(err, response) {
     if (!err && response) {
@@ -41,7 +40,6 @@ setInterval(function() {
 socket.on('stats', function(data) {
   data = data || {};
   this.statsData = {
-    env: data.env,
     entity: data.entity
   };
   this.dataType = 'stats';

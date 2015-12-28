@@ -30,8 +30,8 @@ document.addEventListener('DOMContentLoaded', function() {
   ReactDOM.render(
     <Router>
       <Route path="/" component={App}>
-        <Route path="/*/stats/*" component={Stats} /> {/* /prod/stats/users */}
-        <Route path="/*/logs/*/*/*" component={Logs} /> {/* /prod/logs/users/progress/last_hour */}
+        <Route path="/stats/*" component={Stats} /> {/* /stats/articles */}
+        <Route path="/logs/*/*/*/*" component={Logs} /> {/* /logs/articles/add/progress/last_hour */}
       </Route>
     </Router>,
     document.getElementById('wrap')

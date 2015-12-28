@@ -15,6 +15,7 @@ function pGet(options, callback) {
     cb = callback || _.noop,
     opts = options || {},
     entity = opts.entity,
+    action = opts.action,
     stage = opts.stage,
     gran = opts.gran,
     page = opts.page,
@@ -23,6 +24,7 @@ function pGet(options, callback) {
   workflow.on('validateParams', function() {
     validator.check({
       entity: ['string', entity],
+      action: ['string', action],
       stage: ['string', stage],
       gran: ['string', gran],
       date: ['date', date]
@@ -36,7 +38,7 @@ function pGet(options, callback) {
   });
 
   workflow.on('getLogs', function() {
-    var topic = `queue:logs:${entity}:${stage}:${gran}`,
+    var topic = `queue:logs:${entity}:${action}:${stage}:${gran}`,
       options = {
         page: page,
         ascending: true
