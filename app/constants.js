@@ -3,6 +3,7 @@
 var _ = require('underscore'),
   dictionary = {
     DATABASE_ERROR: 'Database operation has failed',
+    DATABASE_SCHEMA_DOES_NOT_EXISTS: 'Database schema does not exists',
     FAILED_TO_GET_ID: 'Failed to get new ID',
     REQUIRED: '`%s` parameter is required',
     STRING_REQUIRED: '`%s` should be a not empty string',
