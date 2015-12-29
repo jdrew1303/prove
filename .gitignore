@@ -2,5 +2,6 @@
 phantomjsdriver.log
 /tomita/tomita-mac
 /tomita/*.bin
+/tomita/pretty.html
 /public/*
 .DS_Store
