@@ -23,6 +23,9 @@ var _ = require('underscore'),
   EventEmitter = require('events').EventEmitter,
   myEventEmitter = require('../utils/event-emitter');
 
+// crate 'articles' page if not exists
+psql.createTable('articles');
+
 exports = module.exports = function(options, callback) {
   var opts = options || {},
     cb = callback || _.noop,
@@ -72,14 +75,7 @@ exports = module.exports = function(options, callback) {
         });
 
         if (!onlyNotExistingArticles.length) {
-          // need to leave only internalCallback(); when script will be run by cron
-          //if (curPage < pagesLimit) {
-          //  curPage += 1;
-          //  workflow.emit('getArticlesList');
-          //} else {
           internalCallback();
-          //}
-          //
         } else {
           workflow.emit('getArticlesText', onlyNotExistingArticles);
         }
