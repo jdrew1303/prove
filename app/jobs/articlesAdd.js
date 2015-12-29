@@ -16,7 +16,7 @@ exports = module.exports = function(options, callback, logger) {
     workflow = opts.profiling ? myEventEmitter() : new EventEmitter(),
     articleId,
     articleInfo,
-    gotFacts = [];
+    gotFacts = {};
 
   workflow.on('getArticleId', function() {
     async.series([
@@ -71,21 +71,24 @@ exports = module.exports = function(options, callback, logger) {
       } else if (!response) {
         cb('No facts');
       } else {
-        var extractFact = function(fact) {
+        var extractFact = function(fact, factType) {
           _.each(fact, function(item, name) {
             if (name !== '$') {
               let val = item.$.val;
-              gotFacts.push(val.toLowerCase());
+              if (!gotFacts[factType]) {
+                gotFacts[factType] = [];
+              }
+              gotFacts[factType].push(val.toLowerCase());
             }
           });
         };
-        _.each(response, function(facts) {
+        _.each(response, function(facts, factType) {
           if (_.isArray(facts)) {
             _.each(facts, function(fact) {
-              extractFact(fact);
+              extractFact(fact, factType);
             });
           } else if (_.isObject(facts)) {
-            extractFact(facts);
+            extractFact(facts, factType);
           }
         });
         workflow.emit('saveFacts');
@@ -95,13 +98,13 @@ exports = module.exports = function(options, callback, logger) {
 
   workflow.on('saveFacts', function() {
     var values = '';
-    for (let i = 0, l = gotFacts.length; i < l; i += 1) {
-      values += `(${articleId}, '${gotFacts[i]}')`;
-      if (i < l - 1) {
-        values += ',';
-      }
-    }
-    psql.query(`INSERT INTO keywords (article_id, phrase) VALUES ${values}`, function(err) {
+    _.each(gotFacts, function(factsGroup, groupName) {
+      _.each(factsGroup, function(fact) {
+        values += `(${articleId}, '${fact}', '${groupName}'),`;
+      });
+    });
+    values = values.replace(/,$/, '');
+    psql.query(`INSERT INTO keywords (article_id, phrase, type) VALUES ${values}`, function(err) {
       if (err) {
         cb(err);
       } else {
