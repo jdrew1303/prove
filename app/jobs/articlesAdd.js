@@ -68,16 +68,23 @@ exports = module.exports = function(options, callback, logger) {
     tomita.getFacts(articleInfo.text, function(err, response) {
       if (err) {
         cb(err);
-      } else if (!response || !response.Fact || !response.Fact.length) {
+      } else if (!response || !response.Fact || !_.size(response.Fact)) {
         cb('No facts');
       } else {
-        _.each(response.Fact, function(fact) {
+        var extractFact = function(fact) {
           var factField = fact.Field1;
           if (factField) {
             fact = factField.$.val;
             gotFacts.push(fact.toLowerCase());
           }
-        });
+        };
+        if (_.isArray(response.Fact)) {
+          _.each(response.Fact, function(fact) {
+            extractFact(fact);
+          });
+        } else if (_.isObject(response.Fact)) {
+          extractFact(response.Fact);
+        }
         workflow.emit('saveFacts');
       }
     });

@@ -193,4 +193,13 @@ module.exports = function(grunt) {
   grunt.registerTask('build', ['webpack:build']);
 
   grunt.registerTask('syntax', ['jscs', 'jshint', 'eslint']);
+
+  grunt.registerTask('utils', function() {
+    var done = this.async(),
+      target = grunt.option('target'),
+      env = grunt.option('env'),
+      args = grunt.option('args');
+
+    require('./utils/index')(grunt, done, env, target, args);
+  });
 };

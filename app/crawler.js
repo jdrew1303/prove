@@ -4,7 +4,6 @@ var _ = require('underscore'),
   config = require('./crawlers/config'),
   scheduledJobs = {},
   schedulerStep = 1000 * 60, // start scheduler every minute
-  ENABLE_PROFILING = process.env.ENABLE_PROFILING === 'TRUE',
   isStarted;
 
 const Runner = class {
@@ -74,7 +73,7 @@ if (!isStarted) {
   _.each(config, function(item, id) {
     item.id = id;
     addJobToSchedule(id);
-    if (ENABLE_PROFILING) {
+    if (process.env.ENABLE_PROFILING) {
       item.profiling = true;
     }
   });

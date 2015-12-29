@@ -6,7 +6,6 @@ var _ = require('underscore'),
   logger = require('./modules/logger'),
   hits = require('./modules/hits')(),
   queue = require('./modules/queue'),
-  ENABLE_PROFILING = process.env.ENABLE_PROFILING === 'TRUE',
   config = require('./jobs/config'),
   validator = require('./modules/validator'),
   EventEmitter = require('events').EventEmitter,
@@ -228,7 +227,7 @@ if (!isStarted) {
     item.id = id;
     console.log(`Subscribe to ${item.queue}`);
     redis.subscribe(item.queue);
-    if (ENABLE_PROFILING) {
+    if (process.env.ENABLE_PROFILING) {
       item.profiling = true;
     }
   });

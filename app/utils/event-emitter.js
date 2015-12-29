@@ -4,7 +4,7 @@ var _ = require('underscore'),
   usage = require('usage'),
   EventEmitter = require('events').EventEmitter;
 
-exports = module.exports.EventEmitter = function() {
+exports = module.exports = function() {
   var workflow = new EventEmitter(),
     label;
 
