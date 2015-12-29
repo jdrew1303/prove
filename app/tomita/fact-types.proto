@@ -1,6 +1,10 @@
 import "base.proto";
 import "facttypes_base.proto";
 
-message Fact: NFactType.TFact {
+message Action: NFactType.TFact {
+ required string Field1 = 1;
+}
+
+message Address: NFactType.TFact {
  required string Field1 = 1;
 }

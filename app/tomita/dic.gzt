@@ -8,3 +8,7 @@ import "fact-types.proto";
 TAuxDicArticle "действия" {
   key = { "tomita:actions.cxx" type=CUSTOM }
 }
+
+TAuxDicArticle "адреса" {
+  key = { "tomita:address.cxx" type=CUSTOM }
+}

@@ -10,9 +10,11 @@ exports = module.exports = function(options, callback) {
     gotFacts = [];
 
   if (!text) {
-    text = `Террористическая группировка «Боко Харам» совершила 28 декабря серию терактов в Нигерии, в результате которых погибли по меньшей мере 80 человек, сообщает Associated Press.
-Около 50 человек погибли и более 90 пострадали в городе Майдугури, где в ночь на понедельник произошла серия взрывов и нападений с использованием огнестрельного оружия, сообщили в в Национальном агентстве по чрезвычайным ситуациям.
-В городе Мадагали в 150 километрах от Майдугури две смертницы устроили взрывы на рынке рядом с автобусной станцией. В результате погибли 30 человек.`;
+    text = `Террористическая группировка «Боко Харам», адрес которой распологается на по адресу: г Москва, ул. 1-я Владимирская, д. 18, совершила 28 декабря серию терактов в Нигерии. А также ул Нижняя Масловка, д. 10, стр Б.
+
+    Алма-Атинская ул.
+
+    г. Санкт-Петербург. проспекте Гагарина`;
   }
 
   console.log('Text: %s', text);
@@ -20,23 +22,26 @@ exports = module.exports = function(options, callback) {
   tomita.getFacts(text, function(err, response) {
     if (err) {
       cb(err);
-    } else if (!response || !response.Fact || !_.size(response.Fact)) {
+    } else if (!response) {
       cb('No facts');
     } else {
       var extractFact = function(fact) {
-        var factField = fact.Field1;
-        if (factField) {
-          fact = factField.$.val;
-          gotFacts.push(fact.toLowerCase());
-        }
-      };
-      if (_.isArray(response.Fact)) {
-        _.each(response.Fact, function(fact) {
-          extractFact(fact);
+        _.each(fact, function(item, name) {
+          if (name !== '$') {
+            let val = item.$.val;
+            gotFacts.push(val.toLowerCase());
+          }
         });
-      } else if (_.isObject(response.Fact)) {
-        extractFact(response.Fact);
-      }
+      };
+      _.each(response, function(facts) {
+        if (_.isArray(facts)) {
+          _.each(facts, function(fact) {
+            extractFact(fact);
+          });
+        } else if (_.isObject(facts)) {
+          extractFact(facts);
+        }
+      });
 
       console.log(gotFacts);
       cb();

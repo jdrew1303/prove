@@ -18,8 +18,15 @@ function getFacts(text, callback) {
     if (!text) {
       cb(constants.REQUIRED('text'));
     } else {
-      workflow.emit('parse');
+      workflow.emit('prepareText');
     }
+  });
+
+  workflow.on('prepareText', function() {
+    // need to remove dots from short form of types of streets and cities
+    // because Tomita parser will split text for sentences by dots
+    text = text.replace(/(ул|г|просп|ш)\./g, '$1');
+    workflow.emit('parse');
   });
 
   workflow.on('parse', function() {

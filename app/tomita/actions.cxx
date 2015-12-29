@@ -8,4 +8,4 @@ NounOrName -> Noun | ProperName;
 
 FullPhrase -> (Pred) NounOrName Verb Word* NounOrName;
 
-S -> FullPhrase interp (Fact.Field1);
+S -> FullPhrase interp (Action.Field1::not_norm);

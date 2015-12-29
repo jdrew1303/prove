@@ -4,10 +4,12 @@ TTextMinerConfig {
   Dictionary = "dic.gzt";
 
   Articles = [
-    { Name = "действия" }
+    { Name = "действия" },
+    { Name = "адреса" }
   ]
 
   Facts = [
-    { Name = "Fact" }
+    { Name = "Action" },
+    { Name = "Address" }
   ]
 }
