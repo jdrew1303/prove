@@ -12,3 +12,7 @@ message Address: NFactType.TFact {
 message Countries: NFactType.TFact {
  required string Field1 = 1;
 }
+
+message Abbr: NFactType.TFact {
+ required string Field1 = 1;
+}

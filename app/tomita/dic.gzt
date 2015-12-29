@@ -19,3 +19,7 @@ TAuxDicArticle "адреса" {
 TAuxDicArticle "страны" {
   key = { "tomita:countries.cxx" type=CUSTOM }
 }
+
+TAuxDicArticle "аббревиатура" {
+  key = { "tomita:abbr.cxx" type=CUSTOM }
+}
