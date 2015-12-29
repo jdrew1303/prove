@@ -8,3 +8,7 @@ message Action: NFactType.TFact {
 message Address: NFactType.TFact {
  required string Field1 = 1;
 }
+
+message Countries: NFactType.TFact {
+ required string Field1 = 1;
+}

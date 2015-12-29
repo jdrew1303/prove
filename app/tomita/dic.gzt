@@ -4,6 +4,9 @@ import "base.proto";
 import "articles_base.proto";
 
 import "fact-types.proto";
+import "kwtypes.proto";
+
+import "countries.gzt";
 
 TAuxDicArticle "действия" {
   key = { "tomita:actions.cxx" type=CUSTOM }
@@ -11,4 +14,8 @@ TAuxDicArticle "действия" {
 
 TAuxDicArticle "адреса" {
   key = { "tomita:address.cxx" type=CUSTOM }
+}
+
+TAuxDicArticle "страны" {
+  key = { "tomita:countries.cxx" type=CUSTOM }
 }

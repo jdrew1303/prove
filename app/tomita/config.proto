@@ -5,11 +5,13 @@ TTextMinerConfig {
 
   Articles = [
     { Name = "действия" },
-    { Name = "адреса" }
+    { Name = "адреса" },
+    { Name = "страны" }
   ]
 
   Facts = [
     { Name = "Action" },
-    { Name = "Address" }
+    { Name = "Address" },
+    { Name = "Countries" }
   ]
 }
