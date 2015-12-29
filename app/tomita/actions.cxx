@@ -6,6 +6,6 @@ ProperName -> Word<h-reg1> (Word<h-reg1>) (Word<h-reg1>);
 
 NounOrName -> Noun | ProperName;
 
-FullPhrase -> (Pred) NounOrName Verb Word* NounOrName;
+FullPhrase -> (Pred) NounOrName (Word) Verb Word* NounOrName;
 
 S -> FullPhrase interp (Action.Field1::not_norm);
