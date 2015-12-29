@@ -23,7 +23,7 @@ var _ = require('underscore'),
   EventEmitter = require('events').EventEmitter,
   myEventEmitter = require('../utils/event-emitter');
 
-// crate 'articles' page if not exists
+// crate 'articles' table if not exists
 psql.createTable('articles');
 
 exports = module.exports = function(options, callback) {
@@ -34,7 +34,7 @@ exports = module.exports = function(options, callback) {
 
   console.log('Crawler for `Meduza` is started');
 
-  async.each(types, function(type, internalCallback) {
+  async.eachSeries(types, function(type, internalCallback) {
     var curPage = 0,
       workflow = opts.profiling ? myEventEmitter() : new EventEmitter();
 
@@ -48,7 +48,7 @@ exports = module.exports = function(options, callback) {
       request.get({
         url: `${baseUrl}/search?${qs.stringify(queryOptions)}`,
         encoding: null // to get response as Buffer, needed for gunzip
-      }, Q.async(function*(err, response, body) {
+      }, function(err, response, body) {
         if (err) {
           return internalCallback(err);
         }
@@ -64,22 +64,29 @@ exports = module.exports = function(options, callback) {
           return internalCallback();
         }
 
-        var alreadyExistingArticles = yield checkExisting(collections, 'meduza');
-        if (alreadyExistingArticles.length) {
-          alreadyExistingArticles = _.pluck(alreadyExistingArticles, 'url');
-        }
+        checkExisting({
+          urls: collections,
+          source: 'meduza'
+        }, function(err, alreadyExistingArticles) {
+          if (err) {
+            return internalCallback(err);
+          }
+          if (alreadyExistingArticles.length) {
+            alreadyExistingArticles = _.pluck(alreadyExistingArticles, 'url');
+          }
 
-        var onlyNotExistingArticles = _.difference(collections, alreadyExistingArticles);
-        onlyNotExistingArticles = _.filter(onlyNotExistingArticles, function(item) {
-          return !/^quiz/.test(item);
+          var onlyNotExistingArticles = _.difference(collections, alreadyExistingArticles);
+          onlyNotExistingArticles = _.filter(onlyNotExistingArticles, function(item) {
+            return !/^quiz/.test(item);
+          });
+
+          if (!onlyNotExistingArticles.length) {
+            internalCallback();
+          } else {
+            workflow.emit('getArticlesText', onlyNotExistingArticles);
+          }
         });
-
-        if (!onlyNotExistingArticles.length) {
-          internalCallback();
-        } else {
-          workflow.emit('getArticlesText', onlyNotExistingArticles);
-        }
-      }));
+      });
     });
 
     workflow.on('getArticlesText', function(urls) {
@@ -112,6 +119,8 @@ exports = module.exports = function(options, callback) {
               bodyNodeLead = doc.querySelector('.Lead'),
               bodyNodeNews = doc.querySelector('.Body'),
               bodyNodeCards = doc.querySelector('.Card');
+
+            window.close();
 
             if (bodyNodeLead) {
               text += bodyNodeNews.textContent;
@@ -165,13 +174,13 @@ exports = module.exports = function(options, callback) {
 
     workflow.emit('getArticlesList');
   }, function(err) {
+    console.log('Crawler for `Meduza` is stopped');
+    console.log('Saved articles: %d', savedArticles);
+    spentTime = ((new Date().getTime() - spentTime.getTime()) / 1000 / 60).toFixed(2);
+    console.log('Spent time: %d minute', spentTime);
     if (err) {
       cb(err);
     } else {
-      console.log('Crawler for `Meduza` is stopped');
-      console.log('Saved articles: %d', savedArticles);
-      spentTime = ((new Date().getTime() - spentTime.getTime()) / 1000 / 60).toFixed(2);
-      console.log('Spent time: %d minute', spentTime);
       cb(null, null);
     }
   });

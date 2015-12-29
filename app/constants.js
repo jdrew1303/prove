@@ -15,7 +15,8 @@ var _ = require('underscore'),
     FUNCTION_REQUIRED: '`%s` should be a function',
     ONE_REQUIRED: 'You need to specify `%s1`',
     VALIDATOR_WRONG_OPTIONS_FORMAT: 'Validator wrong options format in `%s`',
-    GREATER_THAN_ZERO_REQUIRED: '`%s` should be greater than 0'
+    GREATER_THAN_ZERO_REQUIRED: '`%s` should be greater than 0',
+    SOURCE_DOES_NOT_EXISTS: '`%s` source does not exists'
   },
   current,
   dictionaryActions = {};

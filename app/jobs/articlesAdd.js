@@ -9,7 +9,7 @@ var _ = require('underscore'),
   EventEmitter = require('events').EventEmitter,
   myEventEmitter = require('../utils/event-emitter');
 
-// crate 'keywords' page if not exists
+// crate 'keywords' table if not exists
 psql.createTable('keywords');
 
 exports = module.exports = function(options, callback, logger) {
