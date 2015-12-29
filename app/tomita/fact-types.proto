@@ -16,3 +16,7 @@ message Countries: NFactType.TFact {
 message Abbr: NFactType.TFact {
  required string Field1 = 1;
 }
+
+message Companies: NFactType.TFact {
+ required string Field1 = 1;
+}

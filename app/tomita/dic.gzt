@@ -23,3 +23,7 @@ TAuxDicArticle "страны" {
 TAuxDicArticle "аббревиатура" {
   key = { "tomita:abbr.cxx" type=CUSTOM }
 }
+
+TAuxDicArticle "компании" {
+  key = { "tomita:companies.cxx" type=CUSTOM }
+}

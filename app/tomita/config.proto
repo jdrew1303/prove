@@ -7,13 +7,15 @@ TTextMinerConfig {
     { Name = "действия" },
     { Name = "адреса" },
     { Name = "страны" },
-    { Name = "аббревиатура" }
+    { Name = "аббревиатура" },
+    { Name = "компании" }
   ]
 
   Facts = [
     { Name = "Action" },
     { Name = "Address" },
     { Name = "Countries" },
-    { Name = "Abbr" }
+    { Name = "Abbr" },
+    { Name = "Companies" }
   ]
 }
